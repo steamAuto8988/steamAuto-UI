@@ -1,0 +1,22 @@
+{
+    "Functions": {
+        "AutoSelectChampion": "",
+        "CareerGamesNumber": 20,
+        "EnableAutoAcceptMatching": false,
+        "EnableAutoSelectChampion": false,
+        "ShowTierInGameInfo": false
+    },
+    "Personalization": {
+        "DpiScale": "Auto",
+        "Language": "Auto",
+        "MicaEnabled": true
+    },
+    "General": {
+        "EnableStartLolWithApp": false,
+        "LolPath": "D:/Seraphine-main"
+    },
+    "QFluentWidgets": {
+        "ThemeColor": "#ff009faa",
+        "ThemeMode": "Auto"
+    }
+}
