@@ -1,5 +1,6 @@
 import enum
 import time
+from distutils.util import strtobool
 
 import requests
 from PyQt5.QtCore import QThread, pyqtSignal
@@ -30,6 +31,7 @@ class BuffOrderSignal(object):
 
 class BuffThread(QThread):
     _finished = pyqtSignal(BuffOrderSignal)
+    _buff_cook_finished = pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
@@ -45,6 +47,22 @@ class BuffThread(QThread):
                 if buffCookie is None or buffCookie == '':
                     time.sleep(0.1)
                     continue
+                # 检查配置，是否需要进行处理
+                buff_auto_send = strtobool(
+                    getIniValue(key='buff_auto_send', section='tradeOffer', default='False'))
+                if not buff_auto_send:
+                    time.sleep(1)
+                    continue
+
+                buff_auto_verify = strtobool(
+                    getIniValue(key='buff_auto_verify', section='tradeOffer', default='False'))
+                if not buff_auto_verify:
+                    time.sleep(1)
+                    continue
+
+                if not buff_auto_verify and not buff_auto_send:
+                    continue
+
                 apikey = getIniValue(key='apikey', section=str(steamData.steamId), default='')
                 if apikey is None or apikey == '':
                     apikey = steamData.getApiKey()
@@ -56,18 +74,15 @@ class BuffThread(QThread):
                     time.sleep(0.1)
                     continue
 
-                if self.checkBuffCookie(buffCookie) is False:
-                    orderSignal = BuffOrderSignal(level=SignalLevel.success, title='BUFF报价',
-                                                  msg=f'steam:{steamData.account}关联的BUFFcookie失效！', data=None)
-
-                    self._finished.emit(orderSignal)
+                if self.checkBuffCookie(steamData, buffCookie) is False:
                     time.sleep(0.1)
                     continue
                 print(f'开始处理steam：{steamData.account}的BUFF发货报价')
                 try:
-
-                    self._handlerAcceptTradOffer(cookie=buffCookie, steamData=steamData, apikey=apikey)
-                    self._handlerSendTradOffer(cookie=buffCookie, steamData=steamData, apikey=apikey)
+                    if buff_auto_verify:
+                        self._handlerAcceptTradOffer(cookie=buffCookie, steamData=steamData, apikey=apikey)
+                    if buff_auto_send:
+                        self._handlerSendTradOffer(cookie=buffCookie, steamData=steamData, apikey=apikey)
                 except Exception as e:
                     print(e)
                 time.sleep(10)
@@ -142,7 +157,7 @@ class BuffThread(QThread):
         }
 
         resp = requests.get(url=TRADE_OFFER_URL_REFERER.format(tradeofferid), cookies=steamCookies,
-                            proxies=ProxyConfig.__dict__(),timeout=10,
+                            proxies=ProxyConfig.__dict__(), timeout=10,
                             headers=steam_headers)
 
         partner = text_between(resp.text, "var g_ulTradePartnerSteamID = '", "';")
@@ -171,7 +186,7 @@ class BuffThread(QThread):
         }
         # 读取一次这个steam交易界面，获取对方的steamid
         acceptJson = requests.post(url=TRADE_OFFER_URL.format(tradeofferid), data=steam_data, cookies=steamCookies,
-                                   proxies=ProxyConfig.__dict__(),timeout=10,
+                                   proxies=ProxyConfig.__dict__(), timeout=10,
                                    headers=steam_headers).json()
         if acceptJson['needs_mobile_confirmation']:
             respJson = confirmationTradeOffer(trade_offer_id=str(tradeofferid), steamData=steamData)
@@ -184,17 +199,22 @@ class BuffThread(QThread):
                 self._finished.emit(orderSignal)
             print("确认steam报价返回：{}", respJson)
 
-    def checkBuffCookie(self, cookie):
+    def checkBuffCookie(self, steamData, cookie):
         buff_headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
                           "Chrome/105.0.0.0 Safari/537.36 Edg/105.0.1343.27",
             "Cookie": cookie
         }
         try:
-            respJson = requests.get(url=BASE_API + '/user-center/profile',timeout=10, headers=buff_headers)
+            respJson = requests.get(url=BASE_API + '/user-center/profile', timeout=10, headers=buff_headers)
             if "允许买家还价" in respJson.text:
                 return True
             else:
+                self._buff_cook_finished.emit(steamData.account)
+
+                orderSignal = BuffOrderSignal(level=SignalLevel.error, title='BUFF报价',
+                                              msg=f'steam:{steamData.account}关联的BUFFcookie失效！', data=None)
+                self._finished.emit(orderSignal)
                 return False
         except Exception as e:
             print('检查buff cookie网络异常')

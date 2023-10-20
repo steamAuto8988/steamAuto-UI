@@ -13,7 +13,6 @@ from app.config.config import set_global_value
 from app.config.utils import getIniValue, setIniValue
 from app.steam.Session import SteamSession
 from app.thread.GuardUpdateThread import GuardUpdateThread
-from app.thread.TradeHandlerThread import TradeHandlerThread
 from app.thread.buff import BuffThread, BuffOrderSignal, SignalLevel
 
 
@@ -233,12 +232,21 @@ class SteamDataInterface(QWidget):
             self.SteamInfoTableWidget.setItem(i, 5, tItem)
 
             # BUFFCookies
-            tItem = QTableWidgetItem('BUFF未导入')
+            cookie = getIniValue(key='buff', section=str(item.steamId), default='')
+            value = '已导入'
+            if cookie == '':
+                value = 'BUFF未导入'
+            tItem = QTableWidgetItem(value)
             tItem.setTextAlignment(Qt.AlignCenter)
             self.SteamInfoTableWidget.setItem(i, 6, tItem)
 
             # UUCookies
-            tItem = QTableWidgetItem('UU未导入')
+            # BUFFCookies
+            cookie = getIniValue(key='uu', section=str(item.steamId), default='')
+            value = '已导入'
+            if cookie == '':
+                value = 'UU未导入'
+            tItem = QTableWidgetItem(value)
             tItem.setTextAlignment(Qt.AlignCenter)
             self.SteamInfoTableWidget.setItem(i, 7, tItem)
 
@@ -251,11 +259,20 @@ class SteamDataInterface(QWidget):
 
             self.BuffThread.start()
             self.BuffThread._finished.connect(self.BuffThreadSignal)
+            self.BuffThread._buff_cook_finished.connect(self._buff_cook_finished_error)
             # 更新报价列表
             # self.tradeHandlerThread._finished.connect(self._updateOffreReps)
             # self.tradeHandlerThread.start()
 
         set_global_value('steamDatas', self.steamDatas)
+
+    def _buff_cook_finished_error(self, account):
+        items = self.SteamInfoTableWidget.findItems(account, Qt.MatchExactly)
+        if items.__len__() > 0:
+            row = items[0].row()
+            tItem = QTableWidgetItem('cookie失效')
+            tItem.setTextAlignment(Qt.AlignCenter)
+            self.SteamInfoTableWidget.setItem(row, 6, tItem)
 
     def BuffThreadSignal(self, info: BuffOrderSignal):
         print(f'收到信号{info.msg}')
