@@ -30,11 +30,11 @@
 
 - 右键当前行可选择到 buff或UU平台的cookie
 
-![Untitled](images/屏幕截图 2023-10-20 153048.png)
+![Untitled](https://github.com/steamAuto8988/steamAuto-UI/blob/master/images/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202023-10-20%20153048.png)
 
 **库存展示**
-![Untitled](images/屏幕截图 2023-10-20 153148.png)
+![Untitled](https://github.com/steamAuto8988/steamAuto-UI/blob/master/images/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202023-10-20%20153148.png)
 
 **出售历史**
-![Untitled](images/屏幕截图 2023-10-20 182212.png)
+![Untitled](https://github.com/steamAuto8988/steamAuto-UI/blob/master/images/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202023-10-20%20182212.png)
 
